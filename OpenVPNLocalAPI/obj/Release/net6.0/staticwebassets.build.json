@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "Lco8WTQPUMvEz+S6ufHZEKHivRRzDBruufTFX2JQPyE=",
+  "Source": "OpenVPNLocalAPI",
+  "BasePath": "_content/OpenVPNLocalAPI",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
