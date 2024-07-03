@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Text.Json;
 
 public class OpenVPNLog
 {
@@ -54,9 +57,7 @@ public class GlobalStats
 
 public class OVPN
 {
-    public static void init()
-    {
-        string log = @"TITLE	OpenVPN 2.5.9 x86_64-pc-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] built on Sep 29 2023
+    public static string testlog = @"TITLE	OpenVPN 2.5.9 x86_64-pc-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] built on Sep 29 2023
 TIME	2024-07-03 11:07:29	1720004849
 HEADER	CLIENT_LIST	Common Name	Real Address	Virtual Address	Virtual IPv6 Address	Bytes Received	Bytes Sent	Connected Since	Connected Since (time_t)	Username	Client ID	Peer ID	Data Channel Cipher
 CLIENT_LIST	ovpn	188.90.40.58:58239	10.8.0.2		520170	818166	2024-07-03 11:07:14	1720004834	UNDEF	3	0	AES-256-GCM
@@ -64,6 +65,34 @@ HEADER	ROUTING_TABLE	Virtual Address	Common Name	Real Address	Last Ref	Last Ref 
 ROUTING_TABLE	10.8.0.2	ovpn	188.90.40.58:58239	2024-07-03 11:07:28	1720004848
 GLOBAL_STATS	Max bcast/mcast queue length	0
 END";
+    public static string ReadLog()
+    {
+        string logFilePath = "/var/log/openvpn/openvpn-status.log";
+
+        try
+        {
+            string logContents = System.IO.File.ReadAllText(logFilePath);
+            return logContents;
+        }
+        catch (FileNotFoundException)
+        {
+            Console.Error.WriteLine($"The log file at path {logFilePath} was not found.");
+            return testlog;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Console.Error.WriteLine("You do not have permission to access this file.");
+            return testlog;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred while reading the log file: {ex.Message}");
+            return testlog;
+        }
+    }
+    public static string init(string log)
+    {
+        
 
         OpenVPNLog openVPNLog = ParseLog(log);
 
@@ -82,6 +111,13 @@ END";
         }
 
         Console.WriteLine("GlobalStats: " + openVPNLog.GlobalStats.MaxBcastMcastQueueLength);
+        // Serialize the OpenVPNLog object to a JSON string
+        string jsonString = JsonSerializer.Serialize(openVPNLog, new JsonSerializerOptions
+        {
+            WriteIndented = true // This is optional, for pretty printing the JSON
+        });
+
+        return jsonString;
     }
 
     static OpenVPNLog ParseLog(string log)

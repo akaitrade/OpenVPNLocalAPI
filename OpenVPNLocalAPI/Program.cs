@@ -10,7 +10,7 @@ namespace OpenVPNLocalAPI
     {
         public static void Main(string[] args)
         {
-           
+            
             CreateHostBuilder(args).Build().Run();
 
         }
@@ -20,7 +20,7 @@ namespace OpenVPNLocalAPI
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    /*
+                    
                     webBuilder.UseKestrel(opts =>
                     {
                         // Bind directly to a socket handle or Unix socket
@@ -30,7 +30,7 @@ namespace OpenVPNLocalAPI
                         opts.ListenAnyIP(80);
                         opts.ListenLocalhost(5004);
                         opts.ListenLocalhost(5005);
-                    });*/
+                    });
                 });
     }
 }

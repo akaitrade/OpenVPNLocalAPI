@@ -25,5 +25,16 @@ namespace OpenVPNLocalAPI.Controllers
         {
             return "Success";
         }
+
+        [HttpGet("getlog")]
+        public string getlog()
+        {
+            return OVPN.ReadLog();
+        }
+        [HttpGet("getdata")]
+        public string getdata()
+        {
+            return OVPN.init(OVPN.ReadLog());
+        }
     }
 }
