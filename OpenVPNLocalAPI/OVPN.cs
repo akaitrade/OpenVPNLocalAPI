@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 public class OpenVPNLog
 {
@@ -118,6 +120,54 @@ END";
         });
 
         return jsonString;
+    }
+
+    public static string GetAdapterSpeed()
+    {
+        try
+        {
+            // Execute the ifstat command and capture the output
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = "-c \"ifstat -i eth0 1 1\"", // Replace eth0 with your network interface name
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            string result = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            string up = "";
+            string down = "";
+            // Parse the output to extract the upload and download speeds
+            var regex = new Regex(@"(\d+\.\d+)\s+(\d+\.\d+)");
+            var match = regex.Match(result);
+
+            if (match.Success)
+            {
+                down = match.Groups[1].Value;
+                up = match.Groups[2].Value;
+                Console.WriteLine("Download Speed: " + match.Groups[1].Value + " KB/s");
+                Console.WriteLine("Upload Speed: " + match.Groups[2].Value + " KB/s");
+            }
+            else
+            {
+                Console.WriteLine("Could not parse network speed.");
+            }
+            return up + down;
+
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            return "";
+        }
+        
     }
 
     static OpenVPNLog ParseLog(string log)
