@@ -128,6 +128,14 @@ END";
     {
         try
         {
+            // Print the contents of /proc/net/dev for debugging
+            Console.WriteLine("Contents of /proc/net/dev:");
+            var allLines = File.ReadAllLines("/proc/net/dev");
+            foreach (var line in allLines)
+            {
+                Console.WriteLine(line);
+            }
+
             // Read initial statistics
             var initialStats = ReadNetworkStatistics(interfaceName);
             if (initialStats == null) throw new Exception("Could not read initial network statistics");
