@@ -10,7 +10,7 @@ namespace OpenVPNLocalAPI
     {
         public static void Main(string[] args)
         {
-
+            //OVPN.GetAdapterSpeed();
             CreateHostBuilder(args).Build().Run();
             //OVPN.init(OVPN.ReadLog());
 

@@ -165,7 +165,7 @@ END";
         catch(Exception ex)
         {
             Console.WriteLine(ex.ToString());
-            return "";
+            return ex.ToString();
         }
         
     }
