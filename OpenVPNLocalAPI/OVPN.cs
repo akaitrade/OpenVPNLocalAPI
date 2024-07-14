@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -128,33 +129,27 @@ END";
     {
         try
         {
-            // Print the contents of /proc/net/dev for debugging
-            Console.WriteLine("Contents of /proc/net/dev:");
-            var allLines = File.ReadAllLines("/proc/net/dev");
-            foreach (var line in allLines)
-            {
-                Console.WriteLine(line);
-            }
+            var networkInterface = GetNetworkInterface(interfaceName);
+            if (networkInterface == null) throw new Exception("Network interface not found");
 
-            // Read initial statistics
-            var initialStats = ReadNetworkStatistics(interfaceName);
-            if (initialStats == null) throw new Exception("Could not read initial network statistics");
+            var initialStatistics = networkInterface.GetIPv4Statistics();
+            long initialBytesSent = initialStatistics.BytesSent;
+            long initialBytesReceived = initialStatistics.BytesReceived;
 
-            // Wait for a second
+            // Wait for one second
             Thread.Sleep(1000);
 
-            // Read final statistics
-            var finalStats = ReadNetworkStatistics(interfaceName);
-            if (finalStats == null) throw new Exception("Could not read final network statistics");
+            var finalStatistics = networkInterface.GetIPv4Statistics();
+            long finalBytesSent = finalStatistics.BytesSent;
+            long finalBytesReceived = finalStatistics.BytesReceived;
 
-            // Calculate speed
-            var receiveSpeed = (finalStats.Item1 - initialStats.Item1) / 1024.0;
-            var transmitSpeed = (finalStats.Item2 - initialStats.Item2) / 1024.0;
+            double uploadSpeed = (finalBytesSent - initialBytesSent) / 1024.0;
+            double downloadSpeed = (finalBytesReceived - initialBytesReceived) / 1024.0;
 
-            Console.WriteLine($"Download Speed: {receiveSpeed} KB/s");
-            Console.WriteLine($"Upload Speed: {transmitSpeed} KB/s");
+            Console.WriteLine($"Download Speed: {downloadSpeed} KB/s");
+            Console.WriteLine($"Upload Speed: {uploadSpeed} KB/s");
 
-            return $"Download: {receiveSpeed} KB/s, Upload: {transmitSpeed} KB/s";
+            return $"Download: {downloadSpeed} KB/s, Upload: {uploadSpeed} KB/s";
         }
         catch (Exception ex)
         {
@@ -163,17 +158,16 @@ END";
         }
     }
 
-    private static Tuple<long, long> ReadNetworkStatistics(string interfaceName)
+    private static NetworkInterface GetNetworkInterface(string interfaceName)
     {
-        var lines = File.ReadAllLines("/proc/net/dev");
-        var line = lines.FirstOrDefault(l => l.Trim().StartsWith(interfaceName + ":"));
-        if (line == null) return null;
-
-        var parts = line.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
-        var receiveBytes = long.Parse(parts[1]);
-        var transmitBytes = long.Parse(parts[9]);
-
-        return Tuple.Create(receiveBytes, transmitBytes);
+        foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            if (ni.Name == interfaceName || ni.Description.Contains(interfaceName))
+            {
+                return ni;
+            }
+        }
+        return null;
     }
 
     static OpenVPNLog ParseLog(string log)
