@@ -126,14 +126,15 @@ END";
     {
         try
         {
-            // Execute the ifstat command and capture the output
+            // Execute the nload command and capture the output
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    Arguments = "-c \"ifstat -i eth0 1 1\"", // Replace eth0 with your network interface name
+                    Arguments = "-c \"nload -t 1 -m 0 -i eth0 -o '0 0'\"", // Replace eth0 with your network interface name
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
@@ -142,34 +143,34 @@ END";
             process.Start();
             string result = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
+
+            // Sample output parsing (adjust as necessary)
+            var regex = new Regex(@"(?<=Receive:\s)(\d+\.\d+)\s+KB/s\s+(?<=Send:\s)(\d+\.\d+)\s+KB/s");
+            var match = regex.Match(result);
+
             string up = "";
             string down = "";
-            // Parse the output to extract the upload and download speeds
-            var regex = new Regex(@"(\d+\.\d+)\s+(\d+\.\d+)");
-            var match = regex.Match(result);
 
             if (match.Success)
             {
                 down = match.Groups[1].Value;
                 up = match.Groups[2].Value;
-                Console.WriteLine("Download Speed: " + match.Groups[1].Value + " KB/s");
-                Console.WriteLine("Upload Speed: " + match.Groups[2].Value + " KB/s");
+                Console.WriteLine("Download Speed: " + down + " KB/s");
+                Console.WriteLine("Upload Speed: " + up + " KB/s");
             }
             else
             {
-                up = "Could not parse";
-                down = result;
                 Console.WriteLine("Could not parse network speed.");
             }
+
             return up + down;
 
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
             return ex.ToString();
         }
-        
     }
 
     static OpenVPNLog ParseLog(string log)
