@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 public class OpenVPNLog
 {
@@ -122,55 +124,48 @@ END";
         return jsonString;
     }
 
-    public static string GetAdapterSpeed()
+    public static string GetAdapterSpeed(string interfaceName = "eth0")
     {
         try
         {
-            // Execute the nload command and capture the output
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "/bin/bash",
-                    Arguments = "-c \"nload -t 1 -m 0 -i eth0 -o '0 0'\"", // Replace eth0 with your network interface name
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+            // Read initial statistics
+            var initialStats = ReadNetworkStatistics(interfaceName);
+            if (initialStats == null) throw new Exception("Could not read initial network statistics");
 
-            process.Start();
-            string result = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            // Wait for a second
+            Thread.Sleep(1000);
 
-            // Sample output parsing (adjust as necessary)
-            var regex = new Regex(@"(?<=Receive:\s)(\d+\.\d+)\s+KB/s\s+(?<=Send:\s)(\d+\.\d+)\s+KB/s");
-            var match = regex.Match(result);
+            // Read final statistics
+            var finalStats = ReadNetworkStatistics(interfaceName);
+            if (finalStats == null) throw new Exception("Could not read final network statistics");
 
-            string up = "";
-            string down = "";
+            // Calculate speed
+            var receiveSpeed = (finalStats.Item1 - initialStats.Item1) / 1024.0;
+            var transmitSpeed = (finalStats.Item2 - initialStats.Item2) / 1024.0;
 
-            if (match.Success)
-            {
-                down = match.Groups[1].Value;
-                up = match.Groups[2].Value;
-                Console.WriteLine("Download Speed: " + down + " KB/s");
-                Console.WriteLine("Upload Speed: " + up + " KB/s");
-            }
-            else
-            {
-                Console.WriteLine("Could not parse network speed.");
-            }
+            Console.WriteLine($"Download Speed: {receiveSpeed} KB/s");
+            Console.WriteLine($"Upload Speed: {transmitSpeed} KB/s");
 
-            return up + down;
-
+            return $"Download: {receiveSpeed} KB/s, Upload: {transmitSpeed} KB/s";
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
             return ex.ToString();
         }
+    }
+
+    private static Tuple<long, long> ReadNetworkStatistics(string interfaceName)
+    {
+        var lines = File.ReadAllLines("/proc/net/dev");
+        var line = lines.FirstOrDefault(l => l.Trim().StartsWith(interfaceName + ":"));
+        if (line == null) return null;
+
+        var parts = line.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+        var receiveBytes = long.Parse(parts[1]);
+        var transmitBytes = long.Parse(parts[9]);
+
+        return Tuple.Create(receiveBytes, transmitBytes);
     }
 
     static OpenVPNLog ParseLog(string log)
