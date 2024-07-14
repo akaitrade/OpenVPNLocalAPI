@@ -39,7 +39,7 @@ namespace OpenVPNLocalAPI.Controllers
         [HttpGet("getlink")]
         public string getlink()
         {
-            return OVPN.GetAdapterSpeed();
+            return OVPN.GetAllAdaptersSpeed();
         }
     }
 }

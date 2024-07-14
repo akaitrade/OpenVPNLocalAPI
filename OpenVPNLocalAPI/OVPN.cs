@@ -125,13 +125,13 @@ END";
         return jsonString;
     }
 
-    public static string GetAdapterSpeed(string interfaceName = "eth0")
+    public static string GetAllAdaptersSpeed()
     {
-        try
-        {
-            var networkInterface = GetNetworkInterface(interfaceName);
-            if (networkInterface == null) throw new Exception("Network interface not found");
+        var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+        var networkSpeeds = new List<NetworkSpeedInfo>();
 
+        foreach (var networkInterface in networkInterfaces)
+        {
             var initialStatistics = networkInterface.GetIPv4Statistics();
             long initialBytesSent = initialStatistics.BytesSent;
             long initialBytesReceived = initialStatistics.BytesReceived;
@@ -146,18 +146,29 @@ END";
             double uploadSpeed = (finalBytesSent - initialBytesSent) / 1024.0;
             double downloadSpeed = (finalBytesReceived - initialBytesReceived) / 1024.0;
 
-            Console.WriteLine($"Download Speed: {downloadSpeed} KB/s");
-            Console.WriteLine($"Upload Speed: {uploadSpeed} KB/s");
+            var speedInfo = new NetworkSpeedInfo
+            {
+                Name = networkInterface.Name,
+                Description = networkInterface.Description,
+                UploadSpeedKBps = uploadSpeed,
+                DownloadSpeedKBps = downloadSpeed
+            };
 
-            return $"Download: {downloadSpeed} KB/s, Upload: {uploadSpeed} KB/s";
+            networkSpeeds.Add(speedInfo);
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-            return ex.ToString();
-        }
+
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(networkSpeeds, options);
+
+        return json;
     }
-
+    private class NetworkSpeedInfo
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public double UploadSpeedKBps { get; set; }
+        public double DownloadSpeedKBps { get; set; }
+    }
     private static NetworkInterface GetNetworkInterface(string interfaceName)
     {
         foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
