@@ -157,6 +157,8 @@ END";
             }
             else
             {
+                up = "Could not parse";
+                down = result;
                 Console.WriteLine("Could not parse network speed.");
             }
             return up + down;
